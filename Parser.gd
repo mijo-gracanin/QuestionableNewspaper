@@ -1,18 +1,15 @@
 # https://godotdevelopers.org/forum/discussion/18999/issues-with-xmlparser
 
-extends Node
-
-
 var mainList = []
 var xp = XMLParser.new()
 var regex = RegEx.new()
 var err
 
+func _init():
+	regex.compile("(<[^<]+>)")
 
 func parse_buffer(buffer):
 	xp.open_buffer(buffer)
-	
-	regex.compile("^(<span [^>]+>)?([^<]*)(<\\/span>)?$")
 	
 	var art
 	var subdict
@@ -52,6 +49,18 @@ func accu(dict):
 		elif art == XMLParser.NODE_CDATA:
 			var untrimmed = xp.get_node_name().xml_unescape()
 			var trimmed = untrimmed.strip_edges()
-			var cleaned = regex.search(trimmed).get_string(2)
+			var cleaned = remove_style_tags(trimmed)
 			if ! cleaned.empty():
 				dict["cdata"] = dict["cdata"] + cleaned
+
+func remove_style_tags(original: String) -> String:
+	var matches = regex.search_all(original)
+	
+	if matches == null:
+		return original
+	
+	var clean := original
+	for m in matches:
+		var tag = (m as RegExMatch).get_string(1)
+		clean = clean.replace(tag, "")
+	return clean
